@@ -3,10 +3,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <semaphore.h>
 
-
-
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+//pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+sem_t semaphore;
 int factorial_value = 1;
 
 typedef struct {
@@ -18,14 +18,14 @@ void *calculate_factorial(void *args) {
 
    FactorialPart *f_part = (FactorialPart*)args;
    int res = 1;
-
+   sem_wait(&semaphore);
    for(int i = f_part->begin; i < f_part->end; i++) 
       res *=(i+1); 
    
-   pthread_mutex_lock(&mutex);
+  // pthread_mutex_lock(&mutex);
    factorial_value *= res;
-   pthread_mutex_unlock(&mutex);
-
+  // pthread_mutex_unlock(&mutex);
+   sem_post(&semaphore);
 }
 
 
@@ -96,7 +96,8 @@ int main(int argc, char **argv) {
 
 
     int step = k > threads_num ? (k / threads_num) : 1;
-    pthread_mutex_init(&mutex, NULL);
+   // pthread_mutex_init(&mutex, NULL);
+    sem_init(&semaphore, 0, 1);
     pthread_t threads[threads_num];
     FactorialPart factorial_parts[threads_num];
 
@@ -115,7 +116,8 @@ int main(int argc, char **argv) {
      for(uint32_t i=0; i<threads_num; i++) {
         pthread_join(threads[i], NULL);
      }
-     pthread_mutex_destroy(&mutex);
+     //pthread_mutex_destroy(&mutex);
+     sem_destroy(&semaphore);
      printf("The factorial of %i equals %i.\n", k, factorial_value);
      printf("The factorial of %i with module %i equals %i.\n", k, mod, factorial_value % mod);
      printf("-----------------------------------\n");
